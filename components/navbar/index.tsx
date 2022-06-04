@@ -1,0 +1,162 @@
+import React, { useState, useEffect, useRef } from "react";
+import useTranslation from "hooks/translation";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  useMediaQuery,
+  IconButton,
+  MenuItem,
+  SwipeableDrawer,
+  ListItem,
+} from "@material-ui/core";
+import NextLink from "next/link";
+import { JumboThemeProvider } from "hooks/themes";
+import Link from "components/link";
+import { useRouter } from "next/router";
+import SearchBar from "components/searchBar";
+import GithubOriginalIcon from "react-devicons/github/original";
+import {
+  Brightness7,
+  Close,
+  Menu,
+  NightsStay,
+  Translate,
+} from "@material-ui/icons";
+import { useQuery } from "hooks/query";
+import { useDarkTheme } from "hooks/darkTheme";
+import classes from "./style.module.css";
+
+export default function Navbar({
+  position = "fixed",
+  title,
+  wide = false,
+}: {
+  position?: "fixed" | "absolute" | "sticky" | "static" | "relative";
+  title?: string;
+  wide?: boolean;
+}) {
+  const t = useTranslation();
+  const [query, setQuery] = useQuery();
+  const [atTop, setAtTop] = useState(false);
+  const smallScreen = useMediaQuery("(max-width:800px)");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const langSelectRef = useRef();
+  const [langSelectOpen, setLangSelectOpen] = useState(false);
+  const router = useRouter();
+  const isHome = router.route === "/";
+  const [darkTheme, setDarkTheme] = useDarkTheme();
+
+  const menu = [
+    {
+      name: t("aboutTextNavbar"),
+      href: "/#aboutUs",
+    },
+   
+  ];
+
+  useEffect(() => {
+    setAtTop(window.scrollY < 1);
+    window.addEventListener("scroll", () => {
+      setAtTop(window.scrollY < 1);
+    });
+  }, []);
+
+  function switchTheme() {
+    setDarkTheme((currentDarkTheme: boolean) => {
+      localStorage.setItem("theme", currentDarkTheme ? "light" : "dark");
+      return !darkTheme;
+    });
+  }
+
+  return (
+    <AppBar
+      className={
+        !menuOpen && atTop && isHome
+          ? classes.root
+          : `${classes.root} ${classes.scrolled}`
+      }
+      position={position}
+    >
+      <JumboThemeProvider>
+        <Toolbar
+          className={`${classes.toolbar} ${wide ? classes.wide : "container"}`}
+        >
+          <Link href="/" style={{ color: "white" }}>
+            <Typography variant="h6" className={classes.title}>
+              <img src="/logo_t.svg" alt="Alger logo" />
+              <div className={classes.titleBox}>
+                <div className={classes.bigTitle}>𝔸𝕝𝕘𝕖𝕣</div>
+                <div className={classes.smallTitle}>{title}</div>
+              </div>
+            </Typography>
+          </Link>
+          {!(isHome && atTop) && !smallScreen && (
+            <SearchBar query={query} setQuery={setQuery} small />
+          )}
+          {smallScreen ? (
+            <>
+              <IconButton
+                onClick={() => setMenuOpen((isMenuOpen) => !isMenuOpen)}
+              >
+                {menuOpen ? <Close /> : <Menu />}
+              </IconButton>
+            </>
+          ) : (
+            <div>
+            
+              <IconButton
+                onClick={() => switchTheme()}
+                aria-label="Switch to dark Theme"
+              >
+                {darkTheme ? <Brightness7 /> : <NightsStay />}
+              </IconButton>
+              <IconButton
+                href="https://github.com/BlueKrait7"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="GitHub"
+              >
+                <GithubOriginalIcon color="white" />
+              </IconButton>
+              {menu.map((item) => (
+                <NextLink passHref key={item.name} href={item.href}>
+                  <Button>{item.name}</Button>
+                </NextLink>
+              ))}
+            </div>
+          )}
+        </Toolbar>
+        <SwipeableDrawer
+          onOpen={() => setMenuOpen(true)}
+          onClose={() => setMenuOpen(false)}
+          open={menuOpen && smallScreen}
+          anchor="right"
+          classes={{
+            paper: darkTheme ? classes.drawerDark : classes.drawer,
+          }}
+        >
+          <ListItem className={classes.drawerSearch}>
+            <SearchBar query={query} setQuery={setQuery} small />
+          </ListItem>
+          {menu.map((item) => (
+            <NextLink key={item.name} href={item.href}>
+              <MenuItem>{item.name}</MenuItem>
+            </NextLink>
+          ))}
+          <NextLink href="https://github.com/BlueKrait7">
+            <MenuItem>GitHub</MenuItem>
+          </NextLink>
+          <MenuItem onClick={() => switchTheme()}>
+            {darkTheme ? t("lightModeNavbar") : t("darkModeNavbar")}
+          </MenuItem>
+          <MenuItem onClick={() => setLangSelectOpen(true)}>
+            <Translate className={classes.translateIcon} />
+            {t("changeLanguageNavbar")}
+          </MenuItem>
+        </SwipeableDrawer>
+      </JumboThemeProvider>
+    </AppBar>
+  );
+}
